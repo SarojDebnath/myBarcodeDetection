@@ -1,0 +1,33 @@
+def serverDetect(url,imgPath,modelPath,conf):
+    try:
+        with open(modelPath, 'rb') as model_file, open(imgPath, 'rb') as image_file:
+            files = {
+                "model": model_file,
+                "image": image_file
+            }
+            response = requests.post(url, files=files,timeout=10)
+        status=response.status_code
+        data=response.text     #Example response: '{"0":{"points":[801,442,823,527],"label":"plug","confidence":0.94}}'
+        data=eval(data)
+        #print(data)
+        det=[]
+        img=cv2.imread(imgPath)
+        for key,value in data.items():
+            if value['confidence']>=conf:
+                x=(value['points'][0] + value['points'][2])/2
+                y=(value['points'][1] + value['points'][3])/2
+                area=abs(value['points'][2] - value['points'][0])*abs(value['points'][3] - value['points'][1])
+                det.append([int(key),x,y,area])
+                cv2.rectangle(img,(int(value['points'][0]),int(value['points'][1])),(int(value['points'][2]),int(value['points'][3])),(0,255,0),2)
+                cv2.putText(img,value['label'],(int(value['points'][0]), int(value['points'][1]) - 10),cv2.FONT_HERSHEY_SIMPLEX,0.9,(0, 0, 255),2)
+        print(det)
+        cv2.imshow('station',img)
+        cv2.waitKey(1000)
+        cv2.destroyAllWindows()
+        return status,det
+    except Exception as e:
+        print(e)
+        return 500,[]
+
+
+"http://mgn-w-sarojd:8000/predict/v12"
